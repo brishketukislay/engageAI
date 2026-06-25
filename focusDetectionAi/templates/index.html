@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Focus Monitor</title>
+
+<style>
+body{
+    margin:0;
+    display:flex;
+    height:100vh;
+    font-family:Arial;
+}
+
+.sidebar-left{
+    width:250px;
+    background:#1f2937;
+    color:white;
+    padding:20px;
+}
+
+.content{
+    flex:1;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:#f4f4f4;
+}
+
+.sidebar-right{
+    width:320px;
+    background:#111827;
+    color:white;
+    padding:20px;
+}
+
+img{
+    border-radius:10px;
+}
+
+.status{
+    font-size:26px;
+    margin-top:20px;
+}
+
+.card{
+    background:#1f2937;
+    padding:12px;
+    border-radius:8px;
+    margin-top:15px;
+}
+
+.metric{
+    margin-top:8px;
+}
+
+button{
+    width:100%;
+    margin-top:10px;
+    padding:10px;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.pause{ background:#f59e0b; }
+.reset{ background:#ef4444; color:white; }
+</style>
+</head>
+
+<body>
+
+<!-- LEFT -->
+<div class="sidebar-left">
+<h2>Focus Monitor</h2>
+
+<div id="status" class="status">Loading...</div>
+</div>
+
+<!-- CENTER -->
+<div class="content">
+<img src="/video_feed" width="900">
+</div>
+
+<!-- RIGHT -->
+<div class="sidebar-right">
+
+<h2>Analytics</h2>
+
+<div class="card">
+<div>🎯 Attention</div>
+<div class="metric"><span id="attention">0</span>%</div>
+</div>
+
+<div class="card">
+<div>🧠 Emotion</div>
+<div class="metric" id="emotion">-</div>
+</div>
+
+<div class="card">
+<div>⏱ Focus Time</div>
+<div class="metric"><span id="focusTime">0</span>s</div>
+</div>
+
+<div class="card">
+<div>🚶 Away Time</div>
+<div class="metric"><span id="awayTime">0</span>s</div>
+</div>
+
+<div class="card">
+<div>📡 Message</div>
+<div class="metric" id="message">-</div>
+</div>
+
+<button class="pause" onclick="toggleCamera()">⏸ Pause / Resume</button>
+<button class="reset" onclick="resetStats()">🔄 Reset</button>
+
+</div>
+
+<script>
+
+async function update(){
+
+    const res = await fetch('/status');
+    const data = await res.json();
+
+    document.getElementById('status').innerHTML =
+        data.focused ? "🟢 Focused" : "🔴 Not Focused";
+
+    document.getElementById('attention').innerText = data.attention;
+    document.getElementById('emotion').innerText = data.emotion;
+    document.getElementById('focusTime').innerText = Math.round(data.focus_time);
+    document.getElementById('awayTime').innerText = Math.round(data.away_time);
+    document.getElementById('message').innerText = data.message;
+}
+
+async function toggleCamera(){
+    await fetch('/toggle_camera', {method:'POST'});
+}
+
+async function resetStats(){
+    await fetch('/reset_stats', {method:'POST'});
+}
+
+setInterval(update, 1000);
+
+</script>
+
+</body>
+</html>
