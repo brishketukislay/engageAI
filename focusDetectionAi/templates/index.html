@@ -2,62 +2,160 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Focus Monitor</title>
-<link rel="stylesheet" 
-      href="{{ url_for('static', filename='css/style.css') }}">
+<title>Focus Monitor Pro</title>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<link rel="stylesheet"
+href="{{ url_for('static', filename='css/dashboard.css') }}">
 </head>
 
 <body>
 
-<!-- LEFT -->
-<div class="sidebar-left">
-<h2>Focus Monitor</h2>
+<div class="container">
 
-<div id="status" class="status">Loading...</div>
-</div>
+    <div class="sidebar">
 
-<!-- CENTER -->
-<div class="content">
-<img src="/video_feed" width="900">
-</div>
+        <h1>🧠 Focus Monitor</h1>
 
-<!-- RIGHT -->
-<div class="sidebar-right">
+        <div id="status" class="status">
+            Loading...
+        </div>
 
-<h2>Analytics</h2>
+        <div class="metrics-grid">
 
-<div class="card">
-<div>🎯 Attention</div>
-<div class="metric"><span id="attention">0</span>%</div>
-</div>
+            <div class="card">
+                <h3>Attention</h3>
+                <div class="attention-number">
+                    <span id="attention">0</span>%
+                </div>
+            </div>
 
-<div class="card">
-<div>🧠 Emotion</div>
-<div class="metric" id="emotion">-</div>
-</div>
+            <div class="card">
+                <h3>Emotion</h3>
+                <div class="big-text" id="emotion">-</div>
+            </div>
 
-<div class="card">
-<div>⏱ Focus Time</div>
-<div class="metric"><span id="focusTime">0</span>s</div>
-</div>
+            <div class="card">
+                <h3>Focus Time</h3>
+                <div class="big-text">
+                    <span id="focusTime">0</span>s
+                </div>
+            </div>
 
-<div class="card">
-<div>🚶 Away Time</div>
-<div class="metric"><span id="awayTime">0</span>s</div>
-</div>
+            <div class="card">
+                <h3>Away Time</h3>
+                <div class="big-text">
+                    <span id="awayTime">0</span>s
+                </div>
+            </div>
 
-<div class="card">
-<div>📡 Message</div>
-<div class="metric" id="message">-</div>
-</div>
+        </div>
 
-<button class="pause" onclick="toggleCamera()">⏸ Pause / Resume</button>
-<button class="reset" onclick="resetStats()">🔄 Reset</button>
+        <div class="card">
+            <h3>Message</h3>
+            <div id="message">-</div>
+        </div>
+
+        <button onclick="toggleCamera()">
+            ⏸ Pause / Resume
+        </button>
+
+        <button onclick="resetStats()">
+            🔄 Reset
+        </button>
+
+    </div>
+
+    <div class="main">
+
+        <img src="/video_feed" class="video">
+
+        <div class="charts-grid">
+
+            <div class="chart-card">
+                <canvas id="attentionChart"></canvas>
+            </div>
+
+            <div class="chart-card">
+                <canvas id="emotionChart"></canvas>
+            </div>
+
+        </div>
+
+    </div>
 
 </div>
 
 <script>
+
+const attentionChart = new Chart(
+    document.getElementById('attentionChart'),
+    {
+        type:'line',
+        data:{
+            labels:[],
+            datasets:[{
+                label:'Attention',
+                data:[],
+                borderColor:'#00ff88',
+                backgroundColor:'rgba(0,255,136,.2)',
+                fill:true,
+                tension:.3
+            }]
+        },
+        options:{
+            responsive:true,
+            maintainAspectRatio:false,
+            plugins:{
+                legend:{
+                    labels:{
+                        color:'white'
+                    }
+                }
+            },
+            scales:{
+                x:{
+                    ticks:{color:'white'}
+                },
+                y:{
+                    ticks:{color:'white'},
+                    min:0,
+                    max:100
+                }
+            }
+        }
+    }
+);
+
+const emotionChart = new Chart(
+    document.getElementById('emotionChart'),
+    {
+        type:'doughnut',
+        data:{
+            labels:[
+                'Neutral',
+                'Focused',
+                'Sad',
+                'Surprised'
+            ],
+            datasets:[{
+                data:[0,0,0,0]
+            }]
+        },
+        options:{
+            responsive:true,
+            maintainAspectRatio:false,
+            plugins:{
+                legend:{
+                    labels:{
+                        color:'white'
+                    }
+                }
+            }
+        }
+    }
+);
 
 async function update(){
 
@@ -65,24 +163,57 @@ async function update(){
     const data = await res.json();
 
     document.getElementById('status').innerHTML =
-        data.focused ? "🟢 Focused" : "🔴 Not Focused";
+        data.focused
+        ? "🟢 Focused"
+        : "🔴 Not Focused";
 
-    document.getElementById('attention').innerText = data.attention;
-    document.getElementById('emotion').innerText = data.emotion;
-    document.getElementById('focusTime').innerText = Math.round(data.focus_time);
-    document.getElementById('awayTime').innerText = Math.round(data.away_time);
-    document.getElementById('message').innerText = data.message;
+    document.getElementById('attention').innerText =
+        data.attention;
+
+    document.getElementById('emotion').innerText =
+        data.emotion;
+
+    document.getElementById('focusTime').innerText =
+        Math.round(data.focus_time);
+
+    document.getElementById('awayTime').innerText =
+        Math.round(data.away_time);
+
+    document.getElementById('message').innerText =
+        data.message;
+
+    attentionChart.data.labels =
+        data.history.map((_,i)=>i);
+
+    attentionChart.data.datasets[0].data =
+        data.history;
+
+    attentionChart.update();
+
+    emotionChart.data.datasets[0].data = [
+        data.emotion_history.neutral,
+        data.emotion_history.focused,
+        data.emotion_history.sad,
+        data.emotion_history.surprised
+    ];
+
+    emotionChart.update();
 }
 
 async function toggleCamera(){
-    await fetch('/toggle_camera', {method:'POST'});
+    await fetch('/toggle_camera',{
+        method:'POST'
+    });
 }
 
 async function resetStats(){
-    await fetch('/reset_stats', {method:'POST'});
+    await fetch('/reset_stats',{
+        method:'POST'
+    });
 }
 
-setInterval(update, 1000);
+update();
+setInterval(update,1000);
 
 </script>
 

@@ -1,0 +1,116 @@
+body{
+    margin:0;
+    background:#0f1117;
+    font-family:Segoe UI,sans-serif;
+    color:white;
+    overflow:hidden;
+}
+
+.container{
+    display:flex;
+    height:100vh;
+}
+
+.sidebar{
+    width:320px;
+    padding:15px;
+    background:#161b22;
+    display:flex;
+    flex-direction:column;
+}
+
+.sidebar h1{
+    font-size:26px;
+    margin-top:0;
+    margin-bottom:15px;
+}
+
+.main{
+    flex:1;
+    padding:15px;
+    display:flex;
+    flex-direction:column;
+    gap:15px;
+}
+
+.status{
+    padding:12px;
+    text-align:center;
+    font-weight:bold;
+    border-radius:10px;
+    background:#222;
+    margin-bottom:12px;
+}
+
+.metrics-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+}
+
+.card{
+    background:#1f2630;
+    padding:15px;
+    border-radius:12px;
+}
+
+.card h3{
+    margin:0 0 10px;
+    font-size:14px;
+    color:#c8d0da;
+}
+
+.attention-number{
+    font-size:32px;
+    font-weight:bold;
+    color:#00ff88;
+}
+
+.big-text{
+    font-size:22px;
+    font-weight:bold;
+}
+
+.video{
+    width:100%;
+    height:48vh;
+    object-fit:cover;
+    border-radius:20px;
+    box-shadow:0 0 30px rgba(0,255,136,.25);
+}
+
+.charts-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:15px;
+    flex:1;
+}
+
+.chart-card{
+    background:#1f2630;
+    border-radius:15px;
+    padding:15px;
+    height:260px;
+}
+
+.chart-card canvas{
+    width:100% !important;
+    height:100% !important;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+    font-size:15px;
+    font-weight:bold;
+    background:#00ff88;
+    color:black;
+}
+
+button:hover{
+    opacity:.9;
+}
