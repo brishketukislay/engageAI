@@ -26,6 +26,15 @@ state = {
 
     "away_time": 0,
     "focus_time": 0,
+    "current_away": 0,
+
+    # =========================
+    # ALERT SYSTEM
+    # =========================
+    "alert_enabled": True,
+    "alert_threshold": 30,
+    "alert_triggered": False,
+    "last_alert_time": 0,
 
     # For charts
     "history": [],
@@ -40,7 +49,6 @@ state = {
 }
 
 last_time = time.time()
-
 latest_frame = None
 
 # =========================
@@ -72,7 +80,6 @@ def estimate_emotion(landmarks):
     right_brow = landmarks[300]
 
     mouth_open = abs(mouth_top.y - mouth_bottom.y)
-
     brow_avg = (left_brow.y + right_brow.y) / 2
 
     if mouth_open > 0.07:
@@ -92,9 +99,7 @@ def estimate_emotion(landmarks):
 
 def detect_focus():
 
-    global last_time
-    global latest_frame
-    global state
+    global last_time, latest_frame, state
 
     while True:
 
@@ -103,32 +108,25 @@ def detect_focus():
             continue
 
         success, frame = camera.read()
-
         if not success:
             continue
 
         latest_frame = frame.copy()
 
         now = time.time()
-
         dt = now - last_time
         last_time = now
 
-        rgb = cv2.cvtColor(
-            frame,
-            cv2.COLOR_BGR2RGB
-        )
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         mp_image = mp.Image(
             image_format=mp.ImageFormat.SRGB,
             data=rgb
         )
 
-        timestamp_ms = int(now * 1000)
-
         result = detector.detect_for_video(
             mp_image,
-            timestamp_ms
+            int(now * 1000)
         )
 
         focused = False
@@ -139,50 +137,54 @@ def detect_focus():
 
             landmarks = result.face_landmarks[0]
 
-            # =========================
-            # ATTENTION
-            # =========================
-
             nose = landmarks[1]
 
             h, w, _ = frame.shape
-
             nose_x = int(nose.x * w)
 
             center_x = w // 2
-
-            distance = abs(
-                nose_x - center_x
-            )
-
+            distance = abs(nose_x - center_x)
             max_distance = w // 2
 
             attention = max(
                 0,
-                int(
-                    100 -
-                    (distance / max_distance) * 100
-                )
+                int(100 - (distance / max_distance) * 100)
             )
 
             focused = attention > 70
 
-            # =========================
-            # EMOTION
-            # =========================
-
-            emotion = estimate_emotion(
-                landmarks
-            )
+            emotion = estimate_emotion(landmarks)
 
         # =========================
         # TIMERS
         # =========================
 
         if focused:
+
             state["focus_time"] += dt
+            state["current_away"] = 0
+            state["alert_triggered"] = False
+
         else:
+
             state["away_time"] += dt
+            state["current_away"] += dt
+
+            # =========================
+            # PROGRESSIVE ALERT SYSTEM
+            # =========================
+
+            if state["alert_enabled"]:
+
+                base = state["alert_threshold"]
+                away = state["current_away"]
+
+                if away >= base:
+
+                    if time.time() - state["last_alert_time"] >= 15:
+
+                        state["alert_triggered"] = True
+                        state["last_alert_time"] = time.time()
 
         # =========================
         # STATE UPDATE
@@ -199,13 +201,10 @@ def detect_focus():
         )
 
         # =========================
-        # ATTENTION HISTORY
+        # HISTORY
         # =========================
 
-        state["history"].append(
-            int(attention)
-        )
-
+        state["history"].append(int(attention))
         if len(state["history"]) > 60:
             state["history"].pop(0)
 
@@ -215,26 +214,19 @@ def detect_focus():
 
         if "surprised" in emotion:
             state["emotion_history"]["surprised"] += 1
-
         elif "sad" in emotion:
             state["emotion_history"]["sad"] += 1
-
         elif "focused" in emotion:
             state["emotion_history"]["focused"] += 1
-
         else:
             state["emotion_history"]["neutral"] += 1
 
 # =========================
-# START DETECTION THREAD
+# THREAD START
 # =========================
 
-thread = threading.Thread(
-    target=detect_focus
-)
-
+thread = threading.Thread(target=detect_focus)
 thread.daemon = True
-
 thread.start()
 
 # =========================
@@ -250,17 +242,13 @@ def generate_frames():
         if latest_frame is None:
             continue
 
-        ret, buffer = cv2.imencode(
-            '.jpg',
-            latest_frame
-        )
-
+        ret, buffer = cv2.imencode(".jpg", latest_frame)
         frame = buffer.tobytes()
 
         yield (
             b'--frame\r\n'
-            b'Content-Type: image/jpeg\r\n\r\n'
-            + frame +
+            b'Content-Type: image/jpeg\r\n\r\n' +
+            frame +
             b'\r\n'
         )
 
@@ -268,18 +256,11 @@ def generate_frames():
 # ROUTES
 # =========================
 
-register_routes(
-    app,
-    state,
-    generate_frames
-)
+register_routes(app, state, generate_frames)
 
 # =========================
 # RUN
 # =========================
 
 if __name__ == "__main__":
-    app.run(
-        debug=True,
-        threaded=True
-    )
+    app.run(debug=True, threaded=True)

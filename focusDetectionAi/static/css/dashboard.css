@@ -6,64 +6,78 @@ body{
     overflow:hidden;
 }
 
+*{
+    box-sizing:border-box;
+}
+
 .container{
     display:flex;
     height:100vh;
 }
 
+/* ===========================
+   Sidebar
+=========================== */
+
 .sidebar{
-    width:320px;
-    padding:15px;
+    width:340px;
+    padding:20px;
     background:#161b22;
     display:flex;
     flex-direction:column;
+    gap:12px;
+    overflow-y:auto;
 }
 
 .sidebar h1{
-    font-size:26px;
-    margin-top:0;
-    margin-bottom:15px;
+    margin:0;
+    font-size:28px;
+    text-align:center;
+    color:#00ff88;
 }
 
-.main{
-    flex:1;
-    padding:15px;
-    display:flex;
-    flex-direction:column;
-    gap:15px;
-}
+/* ===========================
+   Status
+=========================== */
 
 .status{
-    padding:12px;
+    padding:14px;
     text-align:center;
+    font-size:18px;
     font-weight:bold;
-    border-radius:10px;
-    background:#222;
-    margin-bottom:12px;
+    background:#222b36;
+    border-radius:12px;
 }
+
+/* ===========================
+   Cards
+=========================== */
 
 .metrics-grid{
     display:grid;
     grid-template-columns:1fr 1fr;
-    gap:10px;
+    gap:12px;
 }
 
-.card{
+.card,
+.message-card{
     background:#1f2630;
-    padding:15px;
-    border-radius:12px;
+    border-radius:14px;
+    padding:16px;
+    box-shadow:0 4px 12px rgba(0,0,0,.25);
 }
 
-.card h3{
-    margin:0 0 10px;
-    font-size:14px;
-    color:#c8d0da;
+.card h3,
+.message-card h3{
+    margin:0 0 12px;
+    color:#c7d0da;
+    font-size:15px;
 }
 
 .attention-number{
-    font-size:32px;
-    font-weight:bold;
+    font-size:34px;
     color:#00ff88;
+    font-weight:bold;
 }
 
 .big-text{
@@ -71,46 +85,171 @@ body{
     font-weight:bold;
 }
 
-.video{
+#message{
+    font-size:16px;
+    color:#ffffff;
+    min-height:24px;
+}
+
+/* ===========================
+   Alert Settings
+=========================== */
+
+.message-card label{
+    display:block;
+    margin-top:10px;
+    margin-bottom:6px;
+    color:#d5d5d5;
+    font-size:14px;
+}
+
+select,
+input[type=number]{
+
     width:100%;
-    height:48vh;
-    object-fit:cover;
-    border-radius:20px;
-    box-shadow:0 0 30px rgba(0,255,136,.25);
+    padding:10px;
+    border:none;
+    outline:none;
+    border-radius:10px;
+    background:#2a3442;
+    color:white;
+    font-size:15px;
+    margin-bottom:10px;
+
 }
 
-.charts-grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:15px;
-    flex:1;
+.checkbox-row{
+
+    display:flex !important;
+    align-items:center;
+    gap:10px;
+    margin-top:12px;
+
 }
 
-.chart-card{
-    background:#1f2630;
-    border-radius:15px;
-    padding:15px;
-    height:260px;
+.checkbox-row input{
+
+    width:auto;
+    transform:scale(1.2);
+
 }
 
-.chart-card canvas{
-    width:100% !important;
-    height:100% !important;
+.alert-status{
+
+    margin-top:14px;
+    background:#2a3442;
+    padding:12px;
+    border-radius:10px;
+    text-align:center;
+    font-weight:bold;
+    color:#00ff88;
+
 }
+
+/* ===========================
+   Buttons
+=========================== */
 
 button{
+
     width:100%;
-    padding:12px;
-    margin-top:10px;
+    padding:14px;
     border:none;
     border-radius:10px;
     cursor:pointer;
     font-size:15px;
     font-weight:bold;
     background:#00ff88;
-    color:black;
+    color:#111;
+    transition:.2s;
+
 }
 
 button:hover{
-    opacity:.9;
+
+    transform:translateY(-2px);
+    opacity:.95;
+
+}
+
+button:active{
+
+    transform:scale(.98);
+
+}
+
+/* ===========================
+   Main Area
+=========================== */
+
+.main{
+
+    flex:1;
+    padding:20px;
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+
+}
+
+.video{
+
+    width:100%;
+    height:48vh;
+    object-fit:cover;
+    border-radius:18px;
+    box-shadow:0 0 30px rgba(0,255,136,.25);
+
+}
+
+/* ===========================
+   Charts
+=========================== */
+
+.charts-grid{
+
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px;
+    flex:1;
+
+}
+
+.chart-card{
+
+    background:#1f2630;
+    border-radius:16px;
+    padding:15px;
+    box-shadow:0 4px 12px rgba(0,0,0,.25);
+
+}
+
+.chart-card canvas{
+
+    width:100% !important;
+    height:100% !important;
+
+}
+
+/* ===========================
+   Scrollbar
+=========================== */
+
+.sidebar::-webkit-scrollbar{
+
+    width:8px;
+
+}
+
+.sidebar::-webkit-scrollbar-thumb{
+
+    background:#333;
+    border-radius:10px;
+
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover{
+
+    background:#555;
+
 }
