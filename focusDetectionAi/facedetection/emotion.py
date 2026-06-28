@@ -4,9 +4,8 @@ from facedetection.config import (
     BROW_SAD_THRESHOLD
 )
 
-# =========================
+
 # EMOTION ENGINE
-# =========================
 
 def estimate_emotion(landmarks):
 
@@ -24,25 +23,17 @@ def estimate_emotion(landmarks):
     mouth_open = abs(mouth_top.y - mouth_bottom.y)
     brow_avg = (left_brow.y + right_brow.y) / 2
 
-    # =========================
     # SURPRISED
-    # =========================
     if mouth_open > MOUTH_OPEN_SURPRISED:
         return "surprised 😲"
 
-    # =========================
     # SAD
-    # =========================
     if mouth_open < MOUTH_SAD_THRESHOLD and brow_avg > BROW_SAD_THRESHOLD:
         return "sad 😔"
 
-    # =========================
     # NEUTRAL
-    # =========================
     if mouth_open < 0.02:
         return "neutral 😐"
 
-    # =========================
     # DEFAULT
-    # =========================
     return "focused 😎"

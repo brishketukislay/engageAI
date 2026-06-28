@@ -34,9 +34,8 @@ class State:
         self.alert_threshold = 5  # seconds
         self.last_alert_time = 0
 
-    # =========================
+
     # SAFE JSON OUTPUT (FIX)
-    # =========================
     def to_dict(self):
 
         return {
@@ -59,9 +58,7 @@ class State:
             "alert_threshold": self.alert_threshold,
         }
 
-    # =========================
     # TIMER METHODS
-    # =========================
     def add_focus_time(self, dt):
         self.focus_time += dt
 

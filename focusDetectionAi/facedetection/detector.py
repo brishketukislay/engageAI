@@ -16,9 +16,7 @@ from facedetection.config import (
     BROW_SAD_THRESHOLD
 )
 
-# =========================
 # EMOTION
-# =========================
 def estimate_emotion(landmarks):
 
     mouth_top = landmarks[13]
@@ -40,9 +38,7 @@ def estimate_emotion(landmarks):
     return "focused 😎"
 
 
-# =========================
 # THREAD
-# =========================
 def detector_loop(state, frame_holder, alert_engine):
 
     camera = cv2.VideoCapture(CAMERA_INDEX)
@@ -107,14 +103,10 @@ def detector_loop(state, frame_holder, alert_engine):
             focused = attention > FOCUS_THRESHOLD
             emotion = estimate_emotion(landmarks)
 
-        # =========================
         # ALERT ENGINE (ONLY TRUTH)
-        # =========================
         alert_engine.update(dt, focused)
 
-        # =========================
         # SYNC STATE FOR FRONTEND
-        # =========================
         state.focused = focused
         state.attention = attention
         state.emotion = emotion
@@ -133,9 +125,7 @@ def detector_loop(state, frame_holder, alert_engine):
         if len(state.history) > ATTENTION_HISTORY_LENGTH:
             state.history.pop(0)
 
-        # =========================
         # EMOTION STATS
-        # =========================
         if "surprised" in emotion:
             state.emotion_history["surprised"] += 1
         elif "sad" in emotion:

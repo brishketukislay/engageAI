@@ -1,23 +1,22 @@
-# =========================
+
 # CAMERA SETTINGS
-# =========================
+
 
 CAMERA_INDEX = 0
 FRAME_WIDTH = None
 FRAME_HEIGHT = None
 
-# =========================
+
 # DETECTION SETTINGS
-# =========================
 
 FOCUS_THRESHOLD = 70
 
 # Mediapipe model path
 FACE_LANDMARK_MODEL = "face_landmarker.task"
 
-# =========================
+
 # ALERT SYSTEM
-# =========================
+
 
 ALERT_ENABLED_DEFAULT = True
 
@@ -30,9 +29,9 @@ ALERT_REPEAT_INTERVAL = 15
 # beep escalation steps
 ALERT_BEEP_STEPS = [1, 2, 3]
 
-# =========================
+
 # EMOTION THRESHOLDS
-# =========================
+
 
 MOUTH_OPEN_SURPRISED = 0.07
 MOUTH_CLOSED_NEUTRAL = 0.02
@@ -40,15 +39,12 @@ MOUTH_CLOSED_NEUTRAL = 0.02
 BROW_SAD_THRESHOLD = 0.45
 MOUTH_SAD_THRESHOLD = 0.015
 
-# =========================
 # HISTORY SETTINGS
-# =========================
 
 ATTENTION_HISTORY_LENGTH = 60
 
-# =========================
+
 # FLASK SETTINGS
-# =========================
 
 DEBUG = True
 THREADED = True

@@ -1,6 +1,5 @@
-// ===============================
+
 // AUDIO ENGINE (STABLE)
-// ===============================
 
 let audioCtx = null;
 
@@ -41,10 +40,7 @@ function beep(duration = 180, frequency = 880, volume = 0.3) {
         oscillator.stop();
     }, duration);
 }
-
-// ===============================
 // ALERT CONFIG (LOCAL)
-// ===============================
 
 let alertSeconds = 3;
 let lastBeepTime = 0;
@@ -67,9 +63,7 @@ function updateAlertSettings() {
     alertSeconds = getAlertSeconds();
 }
 
-// ===============================
 // UI EVENTS
-// ===============================
 
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -92,9 +86,7 @@ document.addEventListener("DOMContentLoaded", () => {
     updateAlertSettings();
 });
 
-// ===============================
 // CHARTS
-// ===============================
 
 const attentionChart = new Chart(
     document.getElementById("attentionChart"),
@@ -142,9 +134,7 @@ const emotionChart = new Chart(
     }
 );
 
-// ===============================
 // MAIN LOOP
-// ===============================
 
 async function update() {
 
@@ -160,9 +150,7 @@ async function update() {
     document.getElementById("awayTime").innerText = Math.round(data.away_time || 0);
     document.getElementById("message").innerText = data.message;
 
-    // ===============================
     // ALERT LOGIC (FRONTEND CONTROLLED)
-    // ===============================
 
     const now = Date.now();
 
@@ -175,9 +163,9 @@ async function update() {
         }
     }
 
-    // ===============================
+
     // CHART UPDATE
-    // ===============================
+
 
     attentionChart.data.labels = data.history.map((_, i) => i);
     attentionChart.data.datasets[0].data = data.history;
@@ -192,9 +180,7 @@ async function update() {
     emotionChart.update();
 }
 
-// ===============================
 // ACTIONS
-// ===============================
 
 async function toggleCamera() {
     await fetch("/toggle_camera", { method: "POST" });
@@ -204,9 +190,7 @@ async function resetStats() {
     await fetch("/reset_stats", { method: "POST" });
 }
 
-// ===============================
 // START
-// ===============================
 
 setInterval(update, 1000);
 update();
