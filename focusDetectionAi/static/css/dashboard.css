@@ -1,255 +1,222 @@
-body{
-    margin:0;
-    background:#0f1117;
-    font-family:Segoe UI,sans-serif;
-    color:white;
-    overflow:hidden;
+
+/* =========================
+   BASE
+========================= */
+
+body {
+    margin: 0;
+    background: #0f1117;
+    font-family: Segoe UI, sans-serif;
+    color: white;
+    overflow: hidden;
 }
 
-*{
-    box-sizing:border-box;
+* {
+    box-sizing: border-box;
 }
 
-.container{
-    display:flex;
-    height:100vh;
+/* =========================
+   LAYOUT
+========================= */
+
+.container {
+    display: flex;
+    height: 100vh;
 }
 
-/* ===========================
-   Sidebar
-=========================== */
+/* =========================
+   SIDEBAR
+========================= */
 
-.sidebar{
-    width:340px;
-    padding:20px;
-    background:#161b22;
-    display:flex;
-    flex-direction:column;
-    gap:12px;
-    overflow-y:auto;
+.sidebar {
+    width: 360px;
+    padding: 18px;
+    background: #161b22;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
 }
 
-.sidebar h1{
-    margin:0;
-    font-size:28px;
-    text-align:center;
-    color:#00ff88;
+.sidebar h1 {
+    margin: 0;
+    font-size: 26px;
+    text-align: center;
+    color: #00ff88;
 }
 
-/* ===========================
-   Status
-=========================== */
+/* =========================
+   STATUS
+========================= */
 
-.status{
-    padding:14px;
-    text-align:center;
-    font-size:18px;
-    font-weight:bold;
-    background:#222b36;
-    border-radius:12px;
+.status {
+    padding: 14px;
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+    background: #222b36;
+    border-radius: 12px;
 }
 
-/* ===========================
-   Cards
-=========================== */
+/* =========================
+   GRID CARDS
+========================= */
 
-.metrics-grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:12px;
+.metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
 }
 
 .card,
-.message-card{
-    background:#1f2630;
-    border-radius:14px;
-    padding:16px;
-    box-shadow:0 4px 12px rgba(0,0,0,.25);
+.message-card {
+    background: #1f2630;
+    border-radius: 14px;
+    padding: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
 }
 
 .card h3,
-.message-card h3{
-    margin:0 0 12px;
-    color:#c7d0da;
-    font-size:15px;
+.message-card h3 {
+    margin: 0 0 10px;
+    font-size: 14px;
+    color: #c7d0da;
 }
 
-.attention-number{
-    font-size:34px;
-    color:#00ff88;
-    font-weight:bold;
+/* =========================
+   METRICS
+========================= */
+
+.attention-number {
+    font-size: 32px;
+    font-weight: bold;
+    color: #00ff88;
 }
 
-.big-text{
-    font-size:22px;
-    font-weight:bold;
+.big-text {
+    font-size: 20px;
+    font-weight: bold;
 }
 
-#message{
-    font-size:16px;
-    color:#ffffff;
-    min-height:24px;
-}
-
-/* ===========================
-   Alert Settings
-=========================== */
-
-.message-card label{
-    display:block;
-    margin-top:10px;
-    margin-bottom:6px;
-    color:#d5d5d5;
-    font-size:14px;
-}
+/* =========================
+   ALERT CARD
+========================= */
 
 select,
-input[type=number]{
-
-    width:100%;
-    padding:10px;
-    border:none;
-    outline:none;
-    border-radius:10px;
-    background:#2a3442;
-    color:white;
-    font-size:15px;
-    margin-bottom:10px;
-
+input[type="number"] {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    outline: none;
+    border-radius: 10px;
+    background: #2a3442;
+    color: white;
+    margin-bottom: 8px;
 }
 
-.checkbox-row{
-
-    display:flex !important;
-    align-items:center;
-    gap:10px;
-    margin-top:12px;
-
+#customAlert {
+    display: none;
 }
 
-.checkbox-row input{
-
-    width:auto;
-    transform:scale(1.2);
-
+.checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+    font-size: 14px;
 }
 
-.alert-status{
-
-    margin-top:14px;
-    background:#2a3442;
-    padding:12px;
-    border-radius:10px;
-    text-align:center;
-    font-weight:bold;
-    color:#00ff88;
-
+.alert-status {
+    margin-top: 12px;
+    padding: 10px;
+    border-radius: 10px;
+    text-align: center;
+    font-weight: bold;
+    background: #2a3442;
+    color: #00ff88;
 }
 
-/* ===========================
-   Buttons
-=========================== */
+/* =========================
+   BUTTONS
+========================= */
 
-button{
-
-    width:100%;
-    padding:14px;
-    border:none;
-    border-radius:10px;
-    cursor:pointer;
-    font-size:15px;
-    font-weight:bold;
-    background:#00ff88;
-    color:#111;
-    transition:.2s;
-
+button {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: bold;
+    background: #00ff88;
+    color: #111;
+    transition: 0.2s ease;
 }
 
-button:hover{
-
-    transform:translateY(-2px);
-    opacity:.95;
-
+button:hover {
+    transform: translateY(-2px);
+    opacity: 0.95;
 }
 
-button:active{
-
-    transform:scale(.98);
-
+button:active {
+    transform: scale(0.98);
 }
 
-/* ===========================
-   Main Area
-=========================== */
+/* =========================
+   MAIN AREA
+========================= */
 
-.main{
-
-    flex:1;
-    padding:20px;
-    display:flex;
-    flex-direction:column;
-    gap:18px;
-
+.main {
+    flex: 1;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
-.video{
+/* =========================
+   VIDEO
+========================= */
 
-    width:100%;
-    height:48vh;
-    object-fit:cover;
-    border-radius:18px;
-    box-shadow:0 0 30px rgba(0,255,136,.25);
-
+.video {
+    width: 100%;
+    height: 48vh;
+    object-fit: cover;
+    border-radius: 18px;
+    box-shadow: 0 0 30px rgba(0,255,136,0.25);
 }
 
-/* ===========================
-   Charts
-=========================== */
+/* =========================
+   CHARTS
+========================= */
 
-.charts-grid{
-
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:18px;
-    flex:1;
-
+.charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    flex: 1;
 }
 
-.chart-card{
-
-    background:#1f2630;
-    border-radius:16px;
-    padding:15px;
-    box-shadow:0 4px 12px rgba(0,0,0,.25);
-
+.chart-card {
+    background: #1f2630;
+    border-radius: 14px;
+    padding: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
 }
 
-.chart-card canvas{
+/* =========================
+   SCROLLBAR
+========================= */
 
-    width:100% !important;
-    height:100% !important;
-
+.sidebar::-webkit-scrollbar {
+    width: 8px;
 }
 
-/* ===========================
-   Scrollbar
-=========================== */
-
-.sidebar::-webkit-scrollbar{
-
-    width:8px;
-
+.sidebar::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 10px;
 }
 
-.sidebar::-webkit-scrollbar-thumb{
-
-    background:#333;
-    border-radius:10px;
-
-}
-
-.sidebar::-webkit-scrollbar-thumb:hover{
-
-    background:#555;
-
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background: #555;
 }

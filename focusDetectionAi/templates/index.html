@@ -1,22 +1,24 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
 <meta charset="UTF-8">
 <title>Focus Monitor Pro</title>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 
-<link rel="stylesheet"
-href="{{ url_for('static', filename='css/dashboard.css') }}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script defer src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+
 </head>
 
 <body>
 
 <div class="container">
 
-    <!-- ===================== -->
-    <!-- SIDEBAR -->
-    <!-- ===================== -->
+    <!-- =========================
+         SIDEBAR
+    ========================== -->
 
     <div class="sidebar">
 
@@ -26,7 +28,9 @@ href="{{ url_for('static', filename='css/dashboard.css') }}">
             Loading...
         </div>
 
-        <!-- Metrics -->
+        <!-- ===================== -->
+        <!-- METRICS -->
+        <!-- ===================== -->
 
         <div class="metrics-grid">
 
@@ -39,9 +43,7 @@ href="{{ url_for('static', filename='css/dashboard.css') }}">
 
             <div class="card">
                 <h3>Emotion</h3>
-                <div class="big-text" id="emotion">
-                    -
-                </div>
+                <div class="big-text" id="emotion">-</div>
             </div>
 
             <div class="card">
@@ -60,113 +62,93 @@ href="{{ url_for('static', filename='css/dashboard.css') }}">
 
         </div>
 
-        <!-- Message -->
+        <!-- ===================== -->
+        <!-- STATUS MESSAGE -->
+        <!-- ===================== -->
 
         <div class="message-card">
-            <h3>Current Status</h3>
 
-            <div id="message">
-                -
-            </div>
+            <h3>Status</h3>
+
+            <div id="message">-</div>
+
         </div>
 
-        <!-- Alert Settings -->
+        <!-- ===================== -->
+        <!-- ALERT SETTINGS -->
+        <!-- ===================== -->
 
         <div class="message-card">
 
             <h3>🔔 Alert Settings</h3>
 
-            <label for="alertTime">
-                Alert me after
-            </label>
+            <label>Alert me after</label>
 
             <select id="alertTime">
 
-                <option value="30" selected>
-                    30 Seconds
-                </option>
-
-                <option value="60">
-                    1 Minute
-                </option>
-
-                <option value="300">
-                    5 Minutes
-                </option>
-
-                <option value="600">
-                    10 Minutes
-                </option>
-
-                <option value="custom">
-                    Custom...
-                </option>
+                <option value="30" selected>30 seconds</option>
+                <option value="60">1 minute</option>
+                <option value="300">5 minutes</option>
+                <option value="600">10 minutes</option>
+                <option value="custom">Custom</option>
 
             </select>
 
             <input
                 type="number"
                 id="customAlert"
-                placeholder="Enter seconds"
+                placeholder="Seconds"
                 min="1"
-                style="display:none;"
             >
 
             <label class="checkbox-row">
 
-                <input
-                    type="checkbox"
-                    id="enableAlert"
-                    checked
-                >
+                <input type="checkbox" id="enableAlert" checked>
 
                 Enable sound alert
 
             </label>
 
             <div id="alertStatus" class="alert-status">
-
                 🟢 Monitoring...
-
             </div>
 
         </div>
 
-        <!-- Buttons -->
+        <!-- ===================== -->
+        <!-- CONTROLS -->
+        <!-- ===================== -->
 
         <button onclick="toggleCamera()">
             ⏸ Pause / Resume
         </button>
 
         <button onclick="resetStats()">
-            🔄 Reset Statistics
+            🔄 Reset
         </button>
 
     </div>
 
-    <!-- ===================== -->
-    <!-- MAIN -->
-    <!-- ===================== -->
+    <!-- =========================
+         MAIN
+    ========================== -->
 
     <div class="main">
 
-        <img
-            src="/video_feed"
-            class="video"
-        >
+        <img src="/video_feed" class="video">
+
+        <!-- ===================== -->
+        <!-- CHARTS -->
+        <!-- ===================== -->
 
         <div class="charts-grid">
 
             <div class="chart-card">
-
                 <canvas id="attentionChart"></canvas>
-
             </div>
 
             <div class="chart-card">
-
                 <canvas id="emotionChart"></canvas>
-
             </div>
 
         </div>
@@ -175,431 +157,6 @@ href="{{ url_for('static', filename='css/dashboard.css') }}">
 
 </div>
 
-<script>
-
-let alertPlayed = false;
-
-// ===============================
-// Beep using Web Audio API
-// ===============================
-
-function beep(duration = 300, frequency = 900, volume = 0.4) {
-
-    if (!document.getElementById("enableAlert").checked)
-        return;
-
-    const AudioContext =
-        window.AudioContext ||
-        window.webkitAudioContext;
-
-    const ctx = new AudioContext();
-
-    const oscillator = ctx.createOscillator();
-    const gainNode = ctx.createGain();
-
-    oscillator.connect(gainNode);
-    gainNode.connect(ctx.destination);
-
-    oscillator.type = "sine";
-    oscillator.frequency.value = frequency;
-
-    gainNode.gain.value = volume;
-
-    oscillator.start();
-
-    setTimeout(() => {
-        oscillator.stop();
-        ctx.close();
-    }, duration);
-}
-
-// ===============================
-// Update alert threshold
-// ===============================
-
-async function updateAlertSettings() {
-
-    let value =
-        document.getElementById("alertTime").value;
-
-    if (value === "custom") {
-
-        value =
-            document.getElementById("customAlert").value;
-
-        if (!value || value <= 0)
-            return;
-
-    }
-
-    await fetch("/update_alert", {
-
-        method: "POST",
-
-        headers: {
-            "Content-Type": "application/json"
-        },
-
-        body: JSON.stringify({
-
-            threshold: parseInt(value),
-
-            enabled:
-                document.getElementById("enableAlert").checked
-
-        })
-
-    });
-
-}
-
-// ===============================
-// Show custom input if required
-// ===============================
-
-document
-.getElementById("alertTime")
-.addEventListener("change", function(){
-
-    const custom =
-        document.getElementById("customAlert");
-
-    if(this.value === "custom"){
-
-        custom.style.display = "block";
-        custom.focus();
-
-    }
-    else{
-
-        custom.style.display = "none";
-        updateAlertSettings();
-
-    }
-
-});
-
-document
-.getElementById("customAlert")
-.addEventListener("change", updateAlertSettings);
-
-document
-.getElementById("enableAlert")
-.addEventListener("change", updateAlertSettings);
-
-// ===============================
-// Attention Chart
-// ===============================
-
-const attentionChart = new Chart(
-
-    document.getElementById("attentionChart"),
-
-    {
-
-        type:'line',
-
-        data:{
-
-            labels:[],
-
-            datasets:[{
-
-                label:'Attention',
-
-                data:[],
-
-                borderColor:'#00ff88',
-
-                backgroundColor:'rgba(0,255,136,.2)',
-
-                fill:true,
-
-                tension:.3
-
-            }]
-
-        },
-
-        options:{
-
-            responsive:true,
-
-            maintainAspectRatio:false,
-
-            plugins:{
-
-                legend:{
-
-                    labels:{
-
-                        color:'white'
-
-                    }
-
-                }
-
-            },
-
-            scales:{
-
-                x:{
-
-                    ticks:{
-
-                        color:'white'
-
-                    }
-
-                },
-
-                y:{
-
-                    ticks:{
-
-                        color:'white'
-
-                    },
-
-                    min:0,
-
-                    max:100
-
-                }
-
-            }
-
-        }
-
-    }
-
-);
-
-// ===============================
-// Emotion Chart
-// ===============================
-
-const emotionChart = new Chart(
-
-    document.getElementById("emotionChart"),
-
-    {
-
-        type:'doughnut',
-
-        data:{
-
-            labels:[
-                'Neutral',
-                'Focused',
-                'Sad',
-                'Surprised'
-            ],
-
-            datasets:[{
-
-                data:[0,0,0,0]
-
-            }]
-
-        },
-
-        options:{
-
-            responsive:true,
-
-            maintainAspectRatio:false,
-
-            plugins:{
-
-                legend:{
-
-                    labels:{
-
-                        color:'white'
-
-                    }
-
-                }
-
-            }
-
-        }
-
-    }
-
-);
-
-// ===============================
-// update() starts in Part 2B
-// ===============================
-// ===============================
-// Update Dashboard
-// ===============================
-
-async function update() {
-
-    const res = await fetch("/status");
-    const data = await res.json();
-
-    // Status
-    document.getElementById("status").innerHTML =
-        data.focused
-        ? "🟢 Focused"
-        : "🔴 Not Focused";
-
-    // Metrics
-    document.getElementById("attention").innerText =
-        data.attention;
-
-    document.getElementById("emotion").innerText =
-        data.emotion;
-
-    document.getElementById("focusTime").innerText =
-        Math.round(data.focus_time);
-
-    document.getElementById("awayTime").innerText =
-        Math.round(data.away_time);
-
-    document.getElementById("message").innerText =
-        data.message;
-
-    // -----------------------------
-    // Alert Status
-    // -----------------------------
-
-    const alertStatus =
-        document.getElementById("alertStatus");
-
-    if (data.current_away <= 0) {
-
-        alertStatus.innerHTML =
-            "🟢 Monitoring...";
-
-    }
-    else if (data.alert) {
-
-        alertStatus.innerHTML =
-            "🔔 Alert Sent";
-
-    }
-    else {
-
-        alertStatus.innerHTML =
-            "⏳ Distracted for "
-            + Math.round(data.current_away)
-            + " sec";
-
-    }
-
-    // -----------------------------
-    // Play Beep Once
-    // -----------------------------
-
-if (data.alert) {
-
-    // intensity based on how long user is away
-    const away = data.current_away;
-    const threshold = data.alert_threshold;
-
-    let beepCount = 1;
-
-    if (away > threshold + 15) {
-        beepCount = 2;
-    }
-
-    if (away > threshold + 30) {
-        beepCount = 3;
-    }
-
-    // play multiple beeps
-    for (let i = 0; i < beepCount; i++) {
-
-        setTimeout(() => {
-            beep();
-        }, i * 250);
-
-    }
-
-    alertPlayed = true;
-
-} else {
-
-    alertPlayed = false;
-
-}
-
-    if (!data.alert) {
-
-        alertPlayed = false;
-
-    }
-
-    // -----------------------------
-    // Charts
-    // -----------------------------
-
-    attentionChart.data.labels =
-        data.history.map((_, i) => i);
-
-    attentionChart.data.datasets[0].data =
-        data.history;
-
-    attentionChart.update();
-
-    emotionChart.data.datasets[0].data = [
-
-        data.emotion_history.neutral,
-        data.emotion_history.focused,
-        data.emotion_history.sad,
-        data.emotion_history.surprised
-
-    ];
-
-    emotionChart.update();
-
-}
-
-// ===============================
-// Camera Controls
-// ===============================
-
-async function toggleCamera() {
-
-    await fetch("/toggle_camera", {
-
-        method: "POST"
-
-    });
-
-}
-
-async function resetStats() {
-
-    await fetch("/reset_stats", {
-
-        method: "POST"
-
-    });
-
-}
-
-// ===============================
-// Initialise Alert Settings
-// ===============================
-
-window.onload = async () => {
-
-    await updateAlertSettings();
-
-    update();
-
-};
-
-// Refresh every second
-setInterval(update, 1000);
-
-</script>
-
 </body>
+
 </html>
