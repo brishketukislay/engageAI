@@ -27,6 +27,16 @@ class State:
         self.away_time = 0
         self.current_away = 0
 
+        # ===== CALIBRATION =====
+        self.calibrated = False
+        self.calib_yaw_center = 1.0
+        self.calib_pitch_center = 1.5
+        self.calib_ear_closed = 0.11
+
+        self.raw_yaw = 1.0
+        self.raw_pitch = 1.5
+        self.raw_ear = 0.25
+
         # ===== HISTORY =====
         self.history = []
         self.emotion_history = {
@@ -67,6 +77,13 @@ class State:
             "session_active": self.session_active,
             "session_duration": round(self.get_session_duration()),
             "session_report": self.session_report,
+            "calibrated": self.calibrated,
+            "calib_yaw_center": self.calib_yaw_center,
+            "calib_pitch_center": self.calib_pitch_center,
+            "calib_ear_closed": self.calib_ear_closed,
+            "raw_yaw": self.raw_yaw,
+            "raw_pitch": self.raw_pitch,
+            "raw_ear": self.raw_ear,
         }
 
     # TIMER METHODS

@@ -101,7 +101,12 @@ def detector_loop(state, frame_holder, alert_engine):
             dx_left = abs(nose_tip.x - left_eye_outer.x)
             dx_right = abs(nose_tip.x - right_eye_outer.x)
             yaw_ratio = dx_left / (dx_right + 1e-6)
-            yaw_dev = abs(yaw_ratio - 1.0)
+            
+            # Save raw ratios to state for calibration
+            state.raw_yaw = yaw_ratio
+
+            yaw_center = state.calib_yaw_center if state.calibrated else 1.0
+            yaw_dev = abs(yaw_ratio - yaw_center)
             yaw_score = max(0.0, 100.0 - (yaw_dev * 180.0))
 
             # 2. Pitch deviation (vertical rotation of head)
@@ -112,7 +117,12 @@ def detector_loop(state, frame_holder, alert_engine):
             dy_top = abs(nose_tip.y - forehead.y)
             dy_bottom = abs(chin.y - nose_tip.y)
             pitch_ratio = dy_top / (dy_bottom + 1e-6)
-            pitch_dev = abs(pitch_ratio - 1.5)
+            
+            # Save raw ratios to state for calibration
+            state.raw_pitch = pitch_ratio
+
+            pitch_center = state.calib_pitch_center if state.calibrated else 1.5
+            pitch_dev = abs(pitch_ratio - pitch_center)
             pitch_score = max(0.0, 100.0 - (pitch_dev * 130.0))
 
             # 3. Eye Aspect Ratio (EAR) for closed eyes
@@ -121,9 +131,14 @@ def detector_loop(state, frame_holder, alert_engine):
             ear_left = abs(landmarks[159].y - landmarks[145].y) / (abs(landmarks[33].x - landmarks[133].x) + 1e-6)
             ear_right = abs(landmarks[386].y - landmarks[374].y) / (abs(landmarks[362].x - landmarks[263].x) + 1e-6)
             avg_ear = (ear_left + ear_right) / 2.0
+            
+            # Save raw ratios to state for calibration
+            state.raw_ear = avg_ear
 
-            # Determine focus
-            if avg_ear < 0.11:
+            # Determine focus using calibrated ear limit if calibrated
+            ear_limit = (state.calib_ear_closed + 0.02) if state.calibrated else 0.11
+
+            if avg_ear < ear_limit:
                 attention = 0
                 focused = False
                 emotion = "eyes closed 😴"

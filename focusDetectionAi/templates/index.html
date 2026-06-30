@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script defer src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 
 </head>
@@ -141,6 +142,10 @@
             🔄 Reset
         </button>
 
+        <button onclick="openCalibration()" class="calib-btn" style="background: #2a3442; color: white; margin-top: 5px;">
+            ⚙️ Calibrate Face
+        </button>
+
     </div>
 
     <div class="main">
@@ -168,6 +173,55 @@
 </div>
 
 <!-- ===================== -->
+<!-- CALIBRATION MODAL -->
+<!-- ===================== -->
+<div id="calibrationModal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+        <span class="close-btn" onclick="closeCalibration()">&times;</span>
+        <h2>⚙️ Face & Gaze Calibration</h2>
+        
+        <div class="calibration-steps" style="margin-top: 15px;">
+            <!-- STEP 1 -->
+            <div id="calibStep1" class="calib-step">
+                <p><strong>Step 1:</strong> Look straight at the center of the screen with a natural posture.</p>
+                <div class="calib-telemetry" style="background: #161b22; padding: 12px; border-radius: 10px; text-align: center; margin: 15px 0; font-family: monospace; font-size: 14px;">
+                    Yaw: <span id="calibYawVal" style="color: #00ff88;">1.00</span> | Pitch: <span id="calibPitchVal" style="color: #00ff88;">1.50</span>
+                </div>
+                <button onclick="captureCenterStep()" class="start-btn" style="margin-top: 5px;">
+                    🎯 Capture Baseline Center
+                </button>
+            </div>
+
+            <!-- STEP 2 -->
+            <div id="calibStep2" class="calib-step" style="display: none;">
+                <p><strong>Step 2:</strong> Close your eyes tightly for a moment to record eye closure limits.</p>
+                <div class="calib-telemetry" style="background: #161b22; padding: 12px; border-radius: 10px; text-align: center; margin: 15px 0; font-family: monospace; font-size: 14px;">
+                    Eye Openness (EAR): <span id="calibEarVal" style="color: #00ff88;">0.25</span>
+                </div>
+                <button onclick="captureBlinkStep()" class="start-btn" style="margin-top: 5px;">
+                    👁️ Capture Blink / Sleep Threshold
+                </button>
+            </div>
+
+            <!-- STEP 3 -->
+            <div id="calibStep3" class="calib-step" style="display: none;">
+                <p><strong>Step 3:</strong> Save calibration limits to activate smart custom focus metrics.</p>
+                <div class="calib-summary" style="background: #161b22; padding: 15px; border-radius: 10px; font-size: 13px; line-height: 1.6; margin: 15px 0;">
+                    <ul style="margin: 0; padding-left: 20px;">
+                        <li>Yaw center ratio: <strong id="summaryYaw" style="color: #00ff88;">1.00</strong></li>
+                        <li>Pitch center ratio: <strong id="summaryPitch" style="color: #00ff88;">1.50</strong></li>
+                        <li>Closed EAR threshold: <strong id="summaryEar" style="color: #00ff88;">0.11</strong></li>
+                    </ul>
+                </div>
+                <button onclick="saveCalibration()" class="start-btn" style="background: #00ff88; color: #111;">
+                    💾 Save & Activate Calibration
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== -->
 <!-- SESSION REPORT MODAL -->
 <!-- ===================== -->
 <div id="reportModal" class="modal">
@@ -189,9 +243,14 @@
             <!-- AI report text will be loaded here -->
         </div>
         
-        <button onclick="closeReport()" class="close-modal-btn">
-            Close Report
-        </button>
+        <div class="modal-actions" style="display: flex; gap: 10px; margin-top: 20px;">
+            <button onclick="downloadReport()" class="download-btn" style="flex: 1; background: #00ff88; color: #111; margin-top: 0; padding: 14px; font-weight: bold; border-radius: 10px; border: none; cursor: pointer;">
+                📥 Download Report
+            </button>
+            <button onclick="closeReport()" class="close-modal-btn" style="flex: 1; margin-top: 0; background: #ff4a4a; color: white; padding: 14px; font-weight: bold; border-radius: 10px; border: none; cursor: pointer;">
+                Close Report
+            </button>
+        </div>
     </div>
 </div>
 

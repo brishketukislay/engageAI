@@ -43,6 +43,7 @@ function beep(duration = 180, frequency = 880, volume = 0.3) {
 // ALERT CONFIG (SYNCHRONIZED WITH BACKEND)
 
 let lastBeepTime = 0;
+let currentSessionReportText = "";
 
 // get alert seconds from UI
 function getAlertSeconds() {
@@ -154,6 +155,7 @@ async function endSession() {
         sessionStatus.innerText = "No active session";
         sessionStatus.style.color = "#c7d0da";
 
+        currentSessionReportText = data.session_report;
         renderReportCharts(data.history, data.emotion_history);
         showReport(data.session_report);
     } catch (e) {
@@ -407,6 +409,277 @@ async function update() {
             data.emotion_history.surprised
         ];
         emotionChart.update();
+    }
+}
+
+// CALIBRATION WIZARD
+let calibInterval = null;
+let lastRawYaw = 1.0;
+let lastRawPitch = 1.5;
+let lastRawEar = 0.25;
+
+let calibYawCenter = 1.0;
+let calibPitchCenter = 1.5;
+let calibEarClosed = 0.11;
+
+let capturedYawSamples = [];
+let capturedPitchSamples = [];
+let capturedEarSamples = [];
+
+function openCalibration() {
+    // Open modal
+    const modal = document.getElementById("calibrationModal");
+    if (modal) modal.style.display = "block";
+    
+    // Reset steps
+    document.getElementById("calibStep1").style.display = "block";
+    document.getElementById("calibStep2").style.display = "none";
+    document.getElementById("calibStep3").style.display = "none";
+    
+    // Reset buttons in modal
+    const btn1 = document.querySelector("#calibStep1 button");
+    if (btn1) {
+        btn1.disabled = false;
+        btn1.innerText = "🎯 Capture Baseline Center";
+    }
+    const btn2 = document.querySelector("#calibStep2 button");
+    if (btn2) {
+        btn2.disabled = false;
+        btn2.innerText = "👁️ Capture Blink / Sleep Threshold";
+    }
+    const btn3 = document.querySelector("#calibStep3 button");
+    if (btn3) {
+        btn3.disabled = false;
+        btn3.innerText = "💾 Save & Activate Calibration";
+    }
+    
+    // Ensure camera is unpaused for preview
+    fetch("/status").then(res => res.json()).then(data => {
+        if (data.paused) {
+            fetch("/toggle_camera", { method: "POST" });
+        }
+    });
+    
+    startCalibTelemetry();
+}
+
+function closeCalibration() {
+    const modal = document.getElementById("calibrationModal");
+    if (modal) modal.style.display = "none";
+    
+    if (calibInterval) {
+        clearInterval(calibInterval);
+        calibInterval = null;
+    }
+    
+    // Re-pause camera if session is not active
+    if (!sessionActive) {
+        fetch("/status").then(res => res.json()).then(data => {
+            if (!data.paused) {
+                fetch("/toggle_camera", { method: "POST" });
+            }
+        });
+    }
+}
+
+function startCalibTelemetry() {
+    if (calibInterval) clearInterval(calibInterval);
+    
+    calibInterval = setInterval(async () => {
+        try {
+            const res = await fetch("/status");
+            const data = await res.json();
+            
+            const yawEl = document.getElementById("calibYawVal");
+            const pitchEl = document.getElementById("calibPitchVal");
+            const earEl = document.getElementById("calibEarVal");
+            
+            if (yawEl) yawEl.innerText = data.raw_yaw.toFixed(2);
+            if (pitchEl) pitchEl.innerText = data.raw_pitch.toFixed(2);
+            if (earEl) earEl.innerText = data.raw_ear.toFixed(2);
+            
+            lastRawYaw = data.raw_yaw;
+            lastRawPitch = data.raw_pitch;
+            lastRawEar = data.raw_ear;
+        } catch (e) {
+            console.error("Calibration telemetry fetch failed:", e);
+        }
+    }, 200);
+}
+
+function captureCenterStep() {
+    const btn = document.querySelector("#calibStep1 button");
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = "⏳ Capturing (Keep Still)...";
+    }
+    
+    capturedYawSamples = [];
+    capturedPitchSamples = [];
+    
+    let count = 0;
+    const interval = setInterval(() => {
+        capturedYawSamples.push(lastRawYaw);
+        capturedPitchSamples.push(lastRawPitch);
+        count++;
+        if (count >= 5) {
+            clearInterval(interval);
+            
+            calibYawCenter = capturedYawSamples.reduce((a, b) => a + b, 0) / capturedYawSamples.length;
+            calibPitchCenter = capturedPitchSamples.reduce((a, b) => a + b, 0) / capturedPitchSamples.length;
+            
+            document.getElementById("calibStep1").style.display = "none";
+            document.getElementById("calibStep2").style.display = "block";
+        }
+    }, 200);
+}
+
+function captureBlinkStep() {
+    const btn = document.querySelector("#calibStep2 button");
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = "⏳ Capturing Blink...";
+    }
+    
+    capturedEarSamples = [];
+    
+    let count = 0;
+    const interval = setInterval(() => {
+        capturedEarSamples.push(lastRawEar);
+        count++;
+        if (count >= 5) {
+            clearInterval(interval);
+            
+            calibEarClosed = capturedEarSamples.reduce((a, b) => a + b, 0) / capturedEarSamples.length;
+            
+            document.getElementById("summaryYaw").innerText = calibYawCenter.toFixed(2);
+            document.getElementById("summaryPitch").innerText = calibPitchCenter.toFixed(2);
+            document.getElementById("summaryEar").innerText = calibEarClosed.toFixed(2);
+            
+            document.getElementById("calibStep2").style.display = "none";
+            document.getElementById("calibStep3").style.display = "block";
+        }
+    }, 200);
+}
+
+async function saveCalibration() {
+    const btn = document.querySelector("#calibStep3 button");
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = "💾 Saving Calibration...";
+    }
+    
+    try {
+        const res = await fetch("/calibrate", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                yaw_center: calibYawCenter,
+                pitch_center: calibPitchCenter,
+                ear_closed: calibEarClosed
+            })
+        });
+        
+        const data = await res.json();
+        if (data.ok) {
+            closeCalibration();
+            alert("🟢 Calibration saved successfully! Custom limits are now active.");
+        } else {
+            throw new Error("API responded with failure");
+        }
+    } catch (e) {
+        console.error("Save calibration failed:", e);
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = "❌ Error. Try Again";
+        }
+    }
+}
+
+// EXPORT REPORT FUNCTION
+function downloadReport() {
+    const focusTime = document.getElementById("focusTime").innerText;
+    const awayTime = document.getElementById("awayTime").innerText;
+    const attentionScore = document.getElementById("attention").innerText;
+    const emotionText = document.getElementById("emotion").innerText;
+    
+    const reportText = currentSessionReportText || "No report text available.";
+
+    // Clean report text from markdown characters for PDF presentation
+    const cleanReport = reportText
+        .replace(/###/g, '')
+        .replace(/##/g, '')
+        .replace(/#/g, '')
+        .replace(/\*\*/g, '')
+        .replace(/\*/g, '');
+
+    const docContent = `==================================================
+🎓 STUDENT FOCUS ANALYSIS REPORT
+==================================================
+
+📊 METRICS SUMMARY
+--------------------------------------------------
+* Focus Duration: ${focusTime}s
+* Away Duration: ${awayTime}s
+* Average Attention Score: ${attentionScore}%
+* Dominant Emotional Tone: ${emotionText}
+
+📝 AI ANALYSIS & RECOMMENDATIONS
+--------------------------------------------------
+${cleanReport}
+`;
+
+    // Check if jsPDF library is available (loaded via CDN)
+    if (typeof window.jspdf !== "undefined") {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Header card
+        doc.setFillColor(22, 27, 34); // Slate background
+        doc.rect(0, 0, 210, 40, "F");
+        
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(22);
+        doc.setTextColor(0, 255, 136); // Brand Green
+        doc.text("🎓 FOCUS MONITOR PRO REPORT", 20, 26);
+        
+        // Metrics section
+        doc.setTextColor(50, 50, 50);
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text("📊 Metrics Summary", 20, 55);
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(11);
+        doc.text(`• Focus Time: ${focusTime} seconds`, 25, 65);
+        doc.text(`• Distracted (Away) Time: ${awayTime} seconds`, 25, 72);
+        doc.text(`• Average Attention Score: ${attentionScore}%`, 25, 79);
+        doc.text(`• Dominant Emotion: ${emotionText}`, 25, 86);
+        
+        // AI Feedback section
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.text("📝 AI Analysis & Feedback", 20, 100);
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        
+        // Wrap lines
+        const wrappedText = doc.splitTextToSize(cleanReport, 170);
+        doc.text(wrappedText, 20, 110);
+        
+        // Save PDF
+        doc.save("Student_Focus_Report.pdf");
+    } else {
+        // Fallback: Download TXT file
+        console.warn("jsPDF not loaded. Downloading report as TXT file.");
+        const blob = new Blob([docContent], { type: "text/plain;charset=utf-8" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "Student_Focus_Report.txt";
+        link.click();
     }
 }
 

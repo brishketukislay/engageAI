@@ -159,6 +159,21 @@ def register_api_routes(app, state, frame_holder, alert_engine):
             "emotion_history": state.emotion_history
         })
 
+    @app.route("/calibrate", methods=["POST"])
+    def calibrate():
+        data = request.get_json()
+        state.calib_yaw_center = float(data.get("yaw_center", 1.0))
+        state.calib_pitch_center = float(data.get("pitch_center", 1.5))
+        state.calib_ear_closed = float(data.get("ear_closed", 0.11))
+        state.calibrated = True
+        return jsonify({
+            "ok": True,
+            "calibrated": state.calibrated,
+            "calib_yaw_center": state.calib_yaw_center,
+            "calib_pitch_center": state.calib_pitch_center,
+            "calib_ear_closed": state.calib_ear_closed
+        })
+
     @app.route("/toggle_camera", methods=["POST"])
     def toggle_camera():
         state.paused = not state.paused
