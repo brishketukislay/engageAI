@@ -106,6 +106,12 @@ def detector_loop(state, frame_holder, alert_engine):
         # ALERT ENGINE (ONLY TRUTH)
         alert_engine.update(dt, focused)
 
+        # Update focus/away time metrics
+        if focused:
+            state.add_focus_time(dt)
+        else:
+            state.add_away_time(dt)
+
         # SYNC STATE FOR FRONTEND
         state.focused = focused
         state.attention = attention

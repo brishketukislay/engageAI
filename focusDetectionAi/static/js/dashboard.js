@@ -40,9 +40,8 @@ function beep(duration = 180, frequency = 880, volume = 0.3) {
         oscillator.stop();
     }, duration);
 }
-// ALERT CONFIG (LOCAL)
+// ALERT CONFIG (SYNCHRONIZED WITH BACKEND)
 
-let alertSeconds = 3;
 let lastBeepTime = 0;
 
 // get alert seconds from UI
@@ -58,9 +57,25 @@ function getAlertSeconds() {
     return parseInt(value);
 }
 
-// sync settings (no backend needed for timing)
-function updateAlertSettings() {
-    alertSeconds = getAlertSeconds();
+// sync settings with backend
+async function updateAlertSettings() {
+    const threshold = getAlertSeconds();
+    const enabled = document.getElementById("enableAlert").checked;
+
+    try {
+        await fetch("/update_alert", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                threshold: threshold,
+                enabled: enabled
+            })
+        });
+    } catch (e) {
+        console.error("Failed to update alert settings:", e);
+    }
 }
 
 // UI EVENTS
@@ -69,6 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const alertTime = document.getElementById("alertTime");
     const customAlert = document.getElementById("customAlert");
+    const enableAlert = document.getElementById("enableAlert");
 
     alertTime.addEventListener("change", () => {
 
@@ -82,6 +98,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     customAlert.addEventListener("input", updateAlertSettings);
+    enableAlert.addEventListener("change", updateAlertSettings);
 
     updateAlertSettings();
 });
@@ -150,17 +167,30 @@ async function update() {
     document.getElementById("awayTime").innerText = Math.round(data.away_time || 0);
     document.getElementById("message").innerText = data.message;
 
-    // ALERT LOGIC (FRONTEND CONTROLLED)
+    // ALERT LOGIC (SYNCHRONIZED WITH BACKEND)
 
     const now = Date.now();
 
-    if (data.current_away >= alertSeconds) {
+    if (data.alert_enabled && data.current_away >= data.alert_threshold) {
 
         // prevent spam (2 sec cooldown)
         if (now - lastBeepTime > 2000) {
             beep();
             lastBeepTime = now;
         }
+    }
+
+    // UPDATE ALERT STATUS TEXT
+    const alertStatusEl = document.getElementById("alertStatus");
+    if (!data.alert_enabled) {
+        alertStatusEl.innerText = "⚪ Alerts Disabled";
+        alertStatusEl.style.color = "#c7d0da";
+    } else if (data.alert_triggered || data.current_away >= data.alert_threshold) {
+        alertStatusEl.innerText = "🚨 Look at the screen!";
+        alertStatusEl.style.color = "#ff4a4a";
+    } else {
+        alertStatusEl.innerText = "🟢 Monitoring...";
+        alertStatusEl.style.color = "#00ff88";
     }
 
 
