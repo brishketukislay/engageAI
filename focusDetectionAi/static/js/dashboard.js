@@ -40,6 +40,28 @@ function beep(duration = 180, frequency = 880, volume = 0.3) {
         oscillator.stop();
     }, duration);
 }
+
+const encouragingPhrases = [
+    "Let's get back to studying, you're doing great!",
+    "Keep it up! Let's refocus on the screen.",
+    "Take a deep breath and let's get back to work.",
+    "You got this! Focus back on the screen.",
+    "Stay focused, you are making great progress!"
+];
+
+function playVoiceAlert() {
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const phrase = encouragingPhrases[Math.floor(Math.random() * encouragingPhrases.length)];
+        const utterance = new SpeechSynthesisUtterance(phrase);
+        utterance.rate = 0.95;
+        utterance.pitch = 1.0;
+        window.speechSynthesis.speak(utterance);
+    } else {
+        beep();
+    }
+}
+
 // ALERT CONFIG (SYNCHRONIZED WITH BACKEND)
 
 let lastBeepTime = 0;
@@ -374,11 +396,16 @@ async function update() {
 
     const now = Date.now();
 
-    if (data.alert_enabled && data.current_away >= data.alert_threshold) {
+    if (data.session_active && data.alert_enabled && data.current_away >= data.alert_threshold) {
 
-        // prevent spam (2 sec cooldown)
-        if (now - lastBeepTime > 2000) {
-            beep();
+        // prevent spam (3 sec cooldown to let speech finish)
+        if (now - lastBeepTime > 3000) {
+            const type = document.getElementById("alertType").value;
+            if (type === "voice") {
+                playVoiceAlert();
+            } else if (type === "beep") {
+                beep();
+            }
             lastBeepTime = now;
         }
     }

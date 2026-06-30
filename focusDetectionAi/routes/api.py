@@ -151,6 +151,8 @@ def register_api_routes(app, state, frame_holder, alert_engine):
     def end_session():
         report = generate_groq_report(state)
         state.end_session(report)
+        alert_engine.current_away = 0
+        state.current_away = 0
         return jsonify({
             "ok": True,
             "session_active": state.session_active,
