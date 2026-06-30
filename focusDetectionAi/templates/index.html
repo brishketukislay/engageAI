@@ -112,12 +112,26 @@
         </div>
 
         <!-- ===================== -->
+        <!-- SESSION CONTROL -->
+        <!-- ===================== -->
+        <div class="message-card">
+            <h3>🎓 Session Control</h3>
+            <div style="display: flex; gap: 8px;">
+                <button id="startSessionBtn" onclick="startSession()" class="start-btn" style="flex: 1; padding: 12px 6px; font-size: 13px;">
+                    ▶️ Start
+                </button>
+                <button id="endSessionBtn" onclick="endSession()" class="end-btn" style="flex: 1; padding: 12px 6px; font-size: 13px;" disabled>
+                    ⏹ End
+                </button>
+            </div>
+            <div id="sessionStatus" class="session-status" style="margin-top: 8px; font-size: 13px; text-align: center; color: #c7d0da;">
+                No active session
+            </div>
+        </div>
+
+        <!-- ===================== -->
         <!-- CONTROLS -->
         <!-- ===================== -->
-
-        <button id="sessionButton" onclick="toggleSession()">
-            ▶️ Start Session
-        </button>
 
         <button onclick="toggleCamera()">
             ⏸ Pause / Resume
@@ -126,11 +140,6 @@
         <button onclick="resetStats()">
             🔄 Reset
         </button>
-
-        <div class="report-card">
-            <h3>Session Report</h3>
-            <pre id="sessionReport">No session report yet.</pre>
-        </div>
 
     </div>
 
@@ -156,6 +165,34 @@
 
     </div>
 
+</div>
+
+<!-- ===================== -->
+<!-- SESSION REPORT MODAL -->
+<!-- ===================== -->
+<div id="reportModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeReport()">&times;</span>
+        <h2>🎓 Student Focus Analysis Report</h2>
+        
+        <!-- final session charts inside the modal -->
+        <div class="modal-charts-grid">
+            <div class="modal-chart-card">
+                <canvas id="reportAttentionChart"></canvas>
+            </div>
+            <div class="modal-chart-card">
+                <canvas id="reportEmotionChart"></canvas>
+            </div>
+        </div>
+
+        <div id="reportContent" class="report-content">
+            <!-- AI report text will be loaded here -->
+        </div>
+        
+        <button onclick="closeReport()" class="close-modal-btn">
+            Close Report
+        </button>
+    </div>
 </div>
 
 </body>

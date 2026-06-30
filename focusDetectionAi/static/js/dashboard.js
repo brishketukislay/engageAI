@@ -103,72 +103,234 @@ document.addEventListener("DOMContentLoaded", () => {
     updateAlertSettings();
 });
 
-async function toggleSession() {
-    const button = document.getElementById("sessionButton");
-    const active = button.dataset.active === "true";
+async function startSession() {
+    const startBtn = document.getElementById("startSessionBtn");
+    const endBtn = document.getElementById("endSessionBtn");
+    const sessionStatus = document.getElementById("sessionStatus");
 
-    if (!active) {
-        await fetch("/start_session", { method: "POST" });
-        button.innerText = "⏹️ End Session";
-        button.dataset.active = "true";
-        document.getElementById("sessionReport").innerText = "Session in progress...";
+    try {
+        const res = await fetch("/start_session", { method: "POST" });
+        const data = await res.json();
+
+        startBtn.disabled = true;
+        endBtn.disabled = false;
+        endBtn.classList.add("end-btn-active");
+
+        sessionStatus.innerText = "⏱ Session in progress...";
+        sessionStatus.style.color = "#00ff88";
+        
+        // Reset local charts if any
+        if (attentionChart) {
+            attentionChart.data.labels = [];
+            attentionChart.data.datasets[0].data = [];
+            attentionChart.update();
+        }
+        if (emotionChart) {
+            emotionChart.data.datasets[0].data = [0, 0, 0, 0];
+            emotionChart.update();
+        }
+    } catch (e) {
+        console.error("Failed to start session:", e);
+        sessionStatus.innerText = "Error starting session";
+        sessionStatus.style.color = "#ff4a4a";
+    }
+}
+
+async function endSession() {
+    const startBtn = document.getElementById("startSessionBtn");
+    const endBtn = document.getElementById("endSessionBtn");
+    const sessionStatus = document.getElementById("sessionStatus");
+
+    sessionStatus.innerText = "🤖 Generating report...";
+    sessionStatus.style.color = "#ffb000";
+    endBtn.disabled = true;
+    endBtn.classList.remove("end-btn-active");
+
+    try {
+        const res = await fetch("/end_session", { method: "POST" });
+        const data = await res.json();
+
+        startBtn.disabled = false;
+        sessionStatus.innerText = "No active session";
+        sessionStatus.style.color = "#c7d0da";
+
+        renderReportCharts(data.history, data.emotion_history);
+        showReport(data.session_report);
+    } catch (e) {
+        console.error("Failed to end session:", e);
+        sessionStatus.innerText = "Error generating report";
+        sessionStatus.style.color = "#ff4a4a";
+        endBtn.disabled = false;
+        endBtn.classList.add("end-btn-active");
+    }
+}
+
+function showReport(reportMd) {
+    const reportContent = document.getElementById("reportContent");
+    if (reportContent) {
+        reportContent.innerHTML = parseMarkdown(reportMd);
+    }
+    const modal = document.getElementById("reportModal");
+    if (modal) {
+        modal.style.display = "block";
+    }
+}
+
+function closeReport() {
+    const modal = document.getElementById("reportModal");
+    if (modal) {
+        modal.style.display = "none";
+    }
+}
+
+function parseMarkdown(md) {
+    if (!md) return "";
+    return md
+        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+        .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+        .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+        .replace(/^\* (.*$)/gim, '<li>$1</li>')
+        .replace(/^- (.*$)/gim, '<li>$1</li>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`(.*?)`/g, '<code>$1</code>')
+        .replace(/\n/g, '<br>');
+}
+
+// CHARTS (GUARDED FROM REF ERROR)
+let attentionChart = null;
+let emotionChart = null;
+let reportAttentionChart = null;
+let reportEmotionChart = null;
+
+function initCharts() {
+    if (typeof Chart === "undefined") {
+        console.warn("Chart.js is not loaded. Dashboard charts are disabled.");
+        document.querySelectorAll(".chart-card").forEach(card => {
+            card.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#c7d0da;font-size:14px;padding:20px;text-align:center;">📊 Chart.js could not be loaded. Graphs are unavailable.</div>`;
+        });
         return;
     }
 
-    const res = await fetch("/end_session", { method: "POST" });
-    const data = await res.json();
-    button.innerText = "▶️ Start Session";
-    button.dataset.active = "false";
-    document.getElementById("sessionReport").innerText = data.report || "Session ended. Report ready.";
+    attentionChart = new Chart(
+        document.getElementById("attentionChart"),
+        {
+            type: "line",
+            data: {
+                labels: [],
+                datasets: [{
+                    label: "Attention",
+                    data: [],
+                    borderColor: "#00ff88",
+                    backgroundColor: "rgba(0,255,136,.2)",
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { ticks: { color: "white" } },
+                    y: { min: 0, max: 100, ticks: { color: "white" } }
+                }
+            }
+        }
+    );
+
+    emotionChart = new Chart(
+        document.getElementById("emotionChart"),
+        {
+            type: "doughnut",
+            data: {
+                labels: ["Neutral", "Focused", "Sad", "Surprised"],
+                datasets: [{
+                    data: [0, 0, 0, 0]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: "white" } }
+                }
+            }
+        }
+    );
 }
 
-// CHARTS
+function renderReportCharts(history, emotionHistory) {
+    if (typeof Chart === "undefined") {
+        const modalCharts = document.querySelector(".modal-charts-grid");
+        if (modalCharts) {
+            modalCharts.innerHTML = `<div style="grid-column: span 2; display:flex;align-items:center;justify-content:center;height:150px;color:#c7d0da;font-size:14px;">📊 Chart.js could not be loaded. Report graphs are unavailable.</div>`;
+        }
+        return;
+    }
 
-const attentionChart = new Chart(
-    document.getElementById("attentionChart"),
-    {
-        type: "line",
-        data: {
-            labels: [],
-            datasets: [{
-                label: "Attention",
-                data: [],
-                borderColor: "#00ff88",
-                backgroundColor: "rgba(0,255,136,.2)",
-                fill: true,
-                tension: 0.3
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: { ticks: { color: "white" } },
-                y: { min: 0, max: 100, ticks: { color: "white" } }
+    if (reportAttentionChart) reportAttentionChart.destroy();
+    if (reportEmotionChart) reportEmotionChart.destroy();
+
+    const attCanvas = document.getElementById("reportAttentionChart");
+    const emoCanvas = document.getElementById("reportEmotionChart");
+    if (!attCanvas || !emoCanvas) return;
+
+    reportAttentionChart = new Chart(
+        attCanvas,
+        {
+            type: "line",
+            data: {
+                labels: history.map((_, i) => i),
+                datasets: [{
+                    label: "Attention Timeline",
+                    data: history,
+                    borderColor: "#00ff88",
+                    backgroundColor: "rgba(0,255,136,.2)",
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { ticks: { color: "white" } },
+                    y: { min: 0, max: 100, ticks: { color: "white" } }
+                }
             }
         }
-    }
-);
+    );
 
-const emotionChart = new Chart(
-    document.getElementById("emotionChart"),
-    {
-        type: "doughnut",
-        data: {
-            labels: ["Neutral", "Focused", "Sad", "Surprised"],
-            datasets: [{
-                data: [0, 0, 0, 0]
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { labels: { color: "white" } }
+    reportEmotionChart = new Chart(
+        emoCanvas,
+        {
+            type: "doughnut",
+            data: {
+                labels: ["Neutral", "Focused", "Sad", "Surprised"],
+                datasets: [{
+                    data: [
+                        emotionHistory.neutral,
+                        emotionHistory.focused,
+                        emotionHistory.sad,
+                        emotionHistory.surprised
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: "white" } }
+                }
             }
         }
-    }
-);
+    );
+}
+
+// Initialize charts on DOM content loaded
+document.addEventListener("DOMContentLoaded", () => {
+    initCharts();
+});
 
 // MAIN LOOP
 
@@ -185,9 +347,26 @@ async function update() {
     document.getElementById("focusTime").innerText = Math.round(data.focus_time || 0);
     document.getElementById("awayTime").innerText = Math.round(data.away_time || 0);
     document.getElementById("message").innerText = data.message;
-    document.getElementById("sessionReport").innerText = data.session_report || document.getElementById("sessionReport").innerText;
-    document.getElementById("sessionButton").dataset.active = data.session_active ? "true" : "false";
-    document.getElementById("sessionButton").innerText = data.session_active ? "⏹️ End Session" : "▶️ Start Session";
+
+    // Synchronize session button states
+    const startBtn = document.getElementById("startSessionBtn");
+    const endBtn = document.getElementById("endSessionBtn");
+    const sessionStatus = document.getElementById("sessionStatus");
+    if (startBtn && endBtn) {
+        startBtn.disabled = data.session_active;
+        endBtn.disabled = !data.session_active;
+        if (data.session_active) {
+            endBtn.classList.add("end-btn-active");
+            sessionStatus.innerText = "⏱ Session in progress...";
+            sessionStatus.style.color = "#00ff88";
+        } else {
+            endBtn.classList.remove("end-btn-active");
+            if (sessionStatus.innerText === "⏱ Session in progress...") {
+                sessionStatus.innerText = "No active session";
+                sessionStatus.style.color = "#c7d0da";
+            }
+        }
+    }
 
     // ALERT LOGIC (SYNCHRONIZED WITH BACKEND)
 
@@ -215,21 +394,20 @@ async function update() {
         alertStatusEl.style.color = "#00ff88";
     }
 
-
     // CHART UPDATE
+    if (attentionChart && emotionChart) {
+        attentionChart.data.labels = data.history.map((_, i) => i);
+        attentionChart.data.datasets[0].data = data.history;
+        attentionChart.update();
 
-
-    attentionChart.data.labels = data.history.map((_, i) => i);
-    attentionChart.data.datasets[0].data = data.history;
-    attentionChart.update();
-
-    emotionChart.data.datasets[0].data = [
-        data.emotion_history.neutral,
-        data.emotion_history.focused,
-        data.emotion_history.sad,
-        data.emotion_history.surprised
-    ];
-    emotionChart.update();
+        emotionChart.data.datasets[0].data = [
+            data.emotion_history.neutral,
+            data.emotion_history.focused,
+            data.emotion_history.sad,
+            data.emotion_history.surprised
+        ];
+        emotionChart.update();
+    }
 }
 
 // ACTIONS

@@ -92,55 +92,72 @@ def detector_loop(state, frame_holder, alert_engine):
             landmarks = result.face_landmarks[0]
             h, w, _ = frame.shape
 
-            xs = [lm.x for lm in landmarks]
-            ys = [lm.y for lm in landmarks]
-            min_x, max_x = min(xs), max(xs)
-            min_y, max_y = min(ys), max(ys)
+            # 1. Yaw deviation (horizontal rotation of head)
+            # Left corner of right eye (33), right corner of left eye (263), nose tip (1)
+            left_eye_outer = landmarks[263]
+            right_eye_outer = landmarks[33]
+            nose_tip = landmarks[1]
 
-            face_width = max_x - min_x
-            face_height = max_y - min_y
-            face_center_x = (min_x + max_x) / 2
-            face_center_y = (min_y + max_y) / 2
+            dx_left = abs(nose_tip.x - left_eye_outer.x)
+            dx_right = abs(nose_tip.x - right_eye_outer.x)
+            yaw_ratio = dx_left / (dx_right + 1e-6)
+            yaw_dev = abs(yaw_ratio - 1.0)
+            yaw_score = max(0.0, 100.0 - (yaw_dev * 180.0))
 
-            frame_center_x = 0.5
-            frame_center_y = 0.5
-            dx = face_center_x - frame_center_x
-            dy = face_center_y - frame_center_y
-            center_distance = math.sqrt(dx * dx + dy * dy)
-            max_distance = math.sqrt(0.5 * 0.5 + 0.5 * 0.5)
+            # 2. Pitch deviation (vertical rotation of head)
+            # Forehead (10), chin (152), nose tip (1)
+            forehead = landmarks[10]
+            chin = landmarks[152]
+            
+            dy_top = abs(nose_tip.y - forehead.y)
+            dy_bottom = abs(chin.y - nose_tip.y)
+            pitch_ratio = dy_top / (dy_bottom + 1e-6)
+            pitch_dev = abs(pitch_ratio - 1.5)
+            pitch_score = max(0.0, 100.0 - (pitch_dev * 130.0))
 
-            attention = max(0, int(100 - (center_distance / max_distance) * 100))
-            visibility_penalty = 0
+            # 3. Eye Aspect Ratio (EAR) for closed eyes
+            # Left Eye: top (159), bottom (145), inner (133), outer (33)
+            # Right Eye: top (386), bottom (374), inner (362), outer (263)
+            ear_left = abs(landmarks[159].y - landmarks[145].y) / (abs(landmarks[33].x - landmarks[133].x) + 1e-6)
+            ear_right = abs(landmarks[386].y - landmarks[374].y) / (abs(landmarks[362].x - landmarks[263].x) + 1e-6)
+            avg_ear = (ear_left + ear_right) / 2.0
 
-            if face_width < 0.18 or face_height < 0.18:
-                visibility_penalty += 30
-            if min_x < 0.05 or max_x > 0.95 or min_y < 0.05 or max_y > 0.95:
-                visibility_penalty += 20
-
-            attention = max(0, attention - visibility_penalty)
-            focused = attention > FOCUS_THRESHOLD and face_width >= 0.18 and face_height >= 0.18
-            emotion = estimate_emotion(landmarks)
-
-            if not focused:
-                if face_width < 0.18 or face_height < 0.18:
-                    state.message = "Face not fully visible. Move closer to the camera."
-                elif abs(dx) > 0.25:
-                    state.message = "Head turned away. Center your face."
-                elif abs(dy) > 0.25:
-                    state.message = "Face too high or low. Bring it into the frame."
-                else:
-                    state.message = "Watching screen but not fully focused."
+            # Determine focus
+            if avg_ear < 0.11:
+                attention = 0
+                focused = False
+                emotion = "eyes closed 😴"
+                state.message = "Eyes closed or sleeping detected."
             else:
-                state.message = "Focused on screen"
+                attention = int((yaw_score + pitch_score) / 2)
+                
+                # Check face size/distance
+                xs = [lm.x for lm in landmarks]
+                ys = [lm.y for lm in landmarks]
+                face_width = max(xs) - min(xs)
+                face_height = max(ys) - min(ys)
+                
+                if face_width < 0.15 or face_height < 0.15:
+                    attention = max(0, attention - 30)
+                    focused = False
+                    state.message = "Too far from camera. Move closer."
+                else:
+                    attention = max(0, min(100, attention))
+                    focused = attention > FOCUS_THRESHOLD
+                    emotion = estimate_emotion(landmarks)
+                    
+                    if not focused:
+                        if yaw_dev > 0.4:
+                            state.message = "Looking away (left or right)."
+                        elif pitch_dev > 0.5:
+                            state.message = "Looking away (up or down)."
+                        else:
+                            state.message = "Distracted/Not focused."
+                    else:
+                        state.message = "Focused on screen"
 
         # ALERT ENGINE (ONLY TRUTH)
         alert_engine.update(dt, focused)
-
-        # Update focus/away time metrics
-        if focused:
-            state.add_focus_time(dt)
-        else:
-            state.add_away_time(dt)
 
         # SYNC STATE FOR FRONTEND
         state.focused = focused
@@ -155,22 +172,30 @@ def detector_loop(state, frame_holder, alert_engine):
         state.alert_threshold = alert_engine.threshold
         state.alert_enabled = alert_engine.enabled
 
-        # =========================
-        # HISTORY
-        # =========================
-        state.history.append(attention)
-        if len(state.history) > ATTENTION_HISTORY_LENGTH:
-            state.history.pop(0)
+        # Only accumulate session statistics if session is active!
+        if state.session_active:
+            # Update focus/away time metrics
+            if focused:
+                state.add_focus_time(dt)
+            else:
+                state.add_away_time(dt)
 
-        # EMOTION STATS
-        if "surprised" in emotion:
-            state.emotion_history["surprised"] += 1
-        elif "sad" in emotion:
-            state.emotion_history["sad"] += 1
-        elif "focused" in emotion:
-            state.emotion_history["focused"] += 1
-        else:
-            state.emotion_history["neutral"] += 1
+            # =========================
+            # HISTORY
+            # =========================
+            state.history.append(attention)
+            if len(state.history) > ATTENTION_HISTORY_LENGTH:
+                state.history.pop(0)
+
+            # EMOTION STATS
+            if "surprised" in emotion:
+                state.emotion_history["surprised"] += 1
+            elif "sad" in emotion:
+                state.emotion_history["sad"] += 1
+            elif "focused" in emotion:
+                state.emotion_history["focused"] += 1
+            else:
+                state.emotion_history["neutral"] += 1
 
 
 def start_detector_thread(state, frame_holder, alert_engine):

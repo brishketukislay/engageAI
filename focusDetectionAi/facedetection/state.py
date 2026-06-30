@@ -61,7 +61,7 @@ class State:
 
             "emotion_history": self.emotion_history,
 
-                "alert_enabled": self.alert_enabled,
+            "alert_enabled": self.alert_enabled,
             "alert_triggered": self.alert_triggered,
             "alert_threshold": self.alert_threshold,
             "session_active": self.session_active,
@@ -95,7 +95,7 @@ class State:
         }
         self.alert_triggered = False
         self.last_alert_time = 0
-        self.session_report = None
+        self.session_report = ""
 
     def start_session(self):
         self.reset_all()

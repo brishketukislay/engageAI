@@ -189,3 +189,133 @@ button:active {
 .sidebar::-webkit-scrollbar-thumb:hover {
     background: #555;
 }
+
+/* Modal Styling */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background-color: #1f2630;
+    margin: 5% auto;
+    padding: 30px;
+    border: 1px solid #334155;
+    width: 80%;
+    max-width: 850px;
+    border-radius: 18px;
+    color: white;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    position: relative;
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.close-btn {
+    color: #c7d0da;
+    float: right;
+    font-size: 30px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+    line-height: 20px;
+}
+
+.close-btn:hover {
+    color: #ff4a4a;
+}
+
+.report-content {
+    margin-top: 20px;
+    max-height: 40vh;
+    overflow-y: auto;
+    padding-right: 10px;
+    line-height: 1.6;
+    font-size: 15px;
+    border-top: 1px solid #2a3442;
+    padding-top: 15px;
+}
+
+.report-content h1, .report-content h2, .report-content h3 {
+    color: #00ff88;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.report-content ul, .report-content ol {
+    margin-left: 20px;
+    margin-bottom: 15px;
+}
+
+.report-content li {
+    margin-bottom: 5px;
+}
+
+.report-content strong {
+    color: #00ff88;
+}
+
+.close-modal-btn {
+    margin-top: 20px;
+    background: #ff4a4a;
+    color: white;
+}
+
+.close-modal-btn:hover {
+    background: #ff2a2a;
+}
+
+/* Button & Active States */
+.start-btn {
+    background: #00ff88;
+    color: #111;
+}
+
+.end-btn {
+    background: #2a3442;
+    color: #8899a6;
+    cursor: not-allowed;
+}
+
+.end-btn-active {
+    background: #ff4a4a !important;
+    color: white !important;
+    cursor: pointer !important;
+    animation: pulseRed 2s infinite;
+}
+
+@keyframes pulseRed {
+    0% { box-shadow: 0 0 0 0 rgba(255, 74, 74, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 74, 74, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 74, 74, 0); }
+}
+
+/* Report modal graphs layout */
+.modal-charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-top: 15px;
+    margin-bottom: 15px;
+}
+
+.modal-chart-card {
+    background: #161b22;
+    border-radius: 12px;
+    padding: 10px;
+    height: 180px;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+    border: 1px solid #222b36;
+}
