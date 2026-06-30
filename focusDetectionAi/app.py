@@ -36,7 +36,7 @@ base_options = python.BaseOptions(
 options = vision.FaceLandmarkerOptions(
     base_options=base_options,
     running_mode=vision.RunningMode.VIDEO,
-    num_faces=1
+    num_faces=5  # <--- Changed from 1 to 5
 )
 
 detector = vision.FaceLandmarker.create_from_options(options)
@@ -141,8 +141,24 @@ def detect_focus():
         emotion = "neutral"
 
         if result.face_landmarks:
+            # 1. Find the nearest face by checking the distance between left eye (386) and right eye (159)
+            nearest_landmarks = None
+            max_face_size = 0
 
-            landmarks = result.face_landmarks[0]
+            for face in result.face_landmarks:
+                # Calculate approximate face width using eye landmarks
+                left_eye = face[386]
+                right_eye = face[159]
+                
+                # Euclidean distance in normalized coordinates
+                face_size = ((left_eye.x - right_eye.x)**2 + (left_eye.y - right_eye.y)**2)**0.5
+                
+                if face_size > max_face_size:
+                    max_face_size = face_size
+                    nearest_landmarks = face
+
+            # 2. Use the nearest face for calculations
+            landmarks = nearest_landmarks
 
             # FOCUS
             
@@ -236,4 +252,4 @@ def reset_stats():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False)
