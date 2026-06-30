@@ -24,6 +24,16 @@ def register_api_routes(app, state, frame_holder, alert_engine):
             "enabled": enabled
         })
 
+    @app.route("/start_session", methods=["POST"])
+    def start_session():
+        state.start_session()
+        return jsonify({"ok": True, "session_active": state.session_active})
+
+    @app.route("/end_session", methods=["POST"])
+    def end_session():
+        report = state.end_session()
+        return jsonify({"ok": True, "session_active": state.session_active, "report": report})
+
     @app.route("/toggle_camera", methods=["POST"])
     def toggle_camera():
         state.paused = not state.paused

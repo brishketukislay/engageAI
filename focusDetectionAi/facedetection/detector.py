@@ -1,3 +1,4 @@
+import math
 import time
 import cv2
 import threading
@@ -89,19 +90,48 @@ def detector_loop(state, frame_holder, alert_engine):
         if result.face_landmarks:
 
             landmarks = result.face_landmarks[0]
-
-            nose = landmarks[1]
-
             h, w, _ = frame.shape
-            nose_x = int(nose.x * w)
-            center_x = w // 2
 
-            distance = abs(nose_x - center_x)
-            max_distance = w // 2
+            xs = [lm.x for lm in landmarks]
+            ys = [lm.y for lm in landmarks]
+            min_x, max_x = min(xs), max(xs)
+            min_y, max_y = min(ys), max(ys)
 
-            attention = max(0, int(100 - (distance / max_distance) * 100))
-            focused = attention > FOCUS_THRESHOLD
+            face_width = max_x - min_x
+            face_height = max_y - min_y
+            face_center_x = (min_x + max_x) / 2
+            face_center_y = (min_y + max_y) / 2
+
+            frame_center_x = 0.5
+            frame_center_y = 0.5
+            dx = face_center_x - frame_center_x
+            dy = face_center_y - frame_center_y
+            center_distance = math.sqrt(dx * dx + dy * dy)
+            max_distance = math.sqrt(0.5 * 0.5 + 0.5 * 0.5)
+
+            attention = max(0, int(100 - (center_distance / max_distance) * 100))
+            visibility_penalty = 0
+
+            if face_width < 0.18 or face_height < 0.18:
+                visibility_penalty += 30
+            if min_x < 0.05 or max_x > 0.95 or min_y < 0.05 or max_y > 0.95:
+                visibility_penalty += 20
+
+            attention = max(0, attention - visibility_penalty)
+            focused = attention > FOCUS_THRESHOLD and face_width >= 0.18 and face_height >= 0.18
             emotion = estimate_emotion(landmarks)
+
+            if not focused:
+                if face_width < 0.18 or face_height < 0.18:
+                    state.message = "Face not fully visible. Move closer to the camera."
+                elif abs(dx) > 0.25:
+                    state.message = "Head turned away. Center your face."
+                elif abs(dy) > 0.25:
+                    state.message = "Face too high or low. Bring it into the frame."
+                else:
+                    state.message = "Watching screen but not fully focused."
+            else:
+                state.message = "Focused on screen"
 
         # ALERT ENGINE (ONLY TRUTH)
         alert_engine.update(dt, focused)
@@ -117,7 +147,8 @@ def detector_loop(state, frame_holder, alert_engine):
         state.attention = attention
         state.emotion = emotion
 
-        state.message = "Focused on screen" if focused else "Looking away"
+        if not result.face_landmarks:
+            state.message = "No face detected. Please face the camera."
 
         state.current_away = alert_engine.current_away
         state.alert_triggered = alert_engine.alert_triggered

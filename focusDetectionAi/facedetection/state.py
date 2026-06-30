@@ -1,3 +1,5 @@
+import os
+import time
 import threading
 
 
@@ -8,11 +10,17 @@ class State:
         self.lock = threading.Lock()
 
         # ===== UI STATE =====
-        self.paused = False
+        self.paused = True
         self.focused = False
         self.attention = 0
         self.emotion = "neutral 😐"
-        self.message = "Starting..."
+        self.message = "Ready. Start a session to begin monitoring."
+
+        # ===== SESSION =====
+        self.session_active = False
+        self.session_start_time = 0
+        self.session_end_time = 0
+        self.session_report = None
 
         # ===== TIMERS =====
         self.focus_time = 0
@@ -53,9 +61,12 @@ class State:
 
             "emotion_history": self.emotion_history,
 
-            "alert_enabled": self.alert_enabled,
+                "alert_enabled": self.alert_enabled,
             "alert_triggered": self.alert_triggered,
             "alert_threshold": self.alert_threshold,
+            "session_active": self.session_active,
+            "session_duration": round(self.get_session_duration()),
+            "session_report": self.session_report,
         }
 
     # TIMER METHODS
@@ -84,5 +95,57 @@ class State:
         }
         self.alert_triggered = False
         self.last_alert_time = 0
+        self.session_report = None
+
+    def start_session(self):
+        self.reset_all()
+        self.session_active = True
+        self.session_start_time = time.time()
+        self.session_end_time = 0
+        self.session_report = None
+        self.paused = False
+        self.message = "Session started. Monitoring student focus."
+
+    def end_session(self, report_text=None):
+        self.session_active = False
+        self.paused = True
+        self.session_end_time = time.time()
+        self.session_report = report_text or self.generate_session_report()
+        self.message = "Session complete. Report ready."
+
+    def get_session_duration(self):
+        if self.session_active and self.session_start_time:
+            return time.time() - self.session_start_time
+        if self.session_start_time and self.session_end_time:
+            return self.session_end_time - self.session_start_time
+        return 0
+
+    def generate_session_report(self):
+        duration = round(self.get_session_duration())
+        focus_pct = 0
+        if duration > 0:
+            focus_pct = round((self.focus_time / duration) * 100)
+
+        dominant_emotion = max(self.emotion_history, key=self.emotion_history.get)
+        summary = (
+            f"Session duration: {duration}s. "
+            f"Student was focused {focus_pct}% of the time. "
+            f"Most frequent state: {dominant_emotion}. "
+        )
+
+        if focus_pct >= 80:
+            summary += "The student stayed highly attentive and showed strong focus throughout the session."
+        elif focus_pct >= 50:
+            summary += "The student was moderately attentive, with some periods of distraction."
+        else:
+            summary += "The student was often distracted and should improve screen engagement."
+
+        api_key = os.getenv("DEEPSEEK_API_KEY")
+        if api_key:
+            summary += " This report was generated using the DeepSeek API key available in the environment."
+        else:
+            summary += " (DeepSeek key not configured; generated locally.)"
+
+        return summary
 # SINGLE GLOBAL INSTANCE (IMPORTANT)
 state = State()

@@ -103,6 +103,25 @@ document.addEventListener("DOMContentLoaded", () => {
     updateAlertSettings();
 });
 
+async function toggleSession() {
+    const button = document.getElementById("sessionButton");
+    const active = button.dataset.active === "true";
+
+    if (!active) {
+        await fetch("/start_session", { method: "POST" });
+        button.innerText = "⏹️ End Session";
+        button.dataset.active = "true";
+        document.getElementById("sessionReport").innerText = "Session in progress...";
+        return;
+    }
+
+    const res = await fetch("/end_session", { method: "POST" });
+    const data = await res.json();
+    button.innerText = "▶️ Start Session";
+    button.dataset.active = "false";
+    document.getElementById("sessionReport").innerText = data.report || "Session ended. Report ready.";
+}
+
 // CHARTS
 
 const attentionChart = new Chart(
@@ -166,6 +185,9 @@ async function update() {
     document.getElementById("focusTime").innerText = Math.round(data.focus_time || 0);
     document.getElementById("awayTime").innerText = Math.round(data.away_time || 0);
     document.getElementById("message").innerText = data.message;
+    document.getElementById("sessionReport").innerText = data.session_report || document.getElementById("sessionReport").innerText;
+    document.getElementById("sessionButton").dataset.active = data.session_active ? "true" : "false";
+    document.getElementById("sessionButton").innerText = data.session_active ? "⏹️ End Session" : "▶️ Start Session";
 
     // ALERT LOGIC (SYNCHRONIZED WITH BACKEND)
 
